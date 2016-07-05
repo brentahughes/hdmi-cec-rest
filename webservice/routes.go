@@ -1,59 +1,68 @@
 package webservice
 
 import (
-    "encoding/json"
-    "fmt"
-    "net/http"
+	"encoding/json"
+	"net/http"
+	"strconv"
 
-    "github.com/chbmuc/cec"
-    "github.com/gorilla/mux"
+	"github.com/bah2830/hdmi-cec-rest/hdmiControl"
+	"github.com/gorilla/mux"
 )
 
-func GetRouter() *mux.Router {
-    router := mux.NewRouter()
-    router.HandleFunc("/", indexHandler)
-    router.HandleFunc("/power", powerHandler).Methods("GET", "POST")
+type Request struct {
+    State string `json:"state"`
+}
 
-    return router
+func GetRouter() *mux.Router {
+	router := mux.NewRouter()
+	router.HandleFunc("/", indexHandler).Methods("GET")
+	router.HandleFunc("/device", deviceHandler).Methods("GET")
+	router.HandleFunc("/device/{port}/power", powerHandler).Methods("GET", "POST")
+	router.HandleFunc("/device/{port}/volume", volumeHandler).Methods("POST")
+
+	return router
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "application/json")
-
-    SendResponse(w, "Hello")
+	SendResponse(w, "Hello")
 }
 
+func deviceHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+    port, _ := strconv.Atoi(vars["port"])
+
+    hdmiControl.SetPort(port)
+    SendOjectResponse(w, hdmiControl.GetActiveDeviceList())
+}
 
 func powerHandler(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "application/json")
+	vars := mux.Vars(r)
+    port, _ := strconv.Atoi(vars["port"])
 
-    c, err := cec.Open("", "cec.go")
-    if err != nil {
-        fmt.Println(err)
-    }
+    hdmiControl.SetPort(port)
 
-    switch r.Method {
-    case "GET":
-        status := c.GetDevicePowerStatus(0)
+	switch r.Method {
+		case "GET":
+			status := hdmiControl.GetPowerStatus()
 
-        SendResponse(w, status)
-    case "POST":
-        decoder := json.NewDecoder(r.Body)
-        var request PowerRequest
+			SendResponse(w, status)
+		case "POST":
+			hdmiControl.Power(getRequestBody(w, r).State)
+	}
+}
 
-        err := decoder.Decode(&request)
-        if err != nil {
-            fmt.Println(err)
-        }
+func volumeHandler(w http.ResponseWriter, r *http.Request) {
+	hdmiControl.SetVolume(getRequestBody(w, r).State)
+}
 
-        if request.State == "on" {
-            c.PowerOn(0)
+func getRequestBody(w http.ResponseWriter, r *http.Request) Request {
+	var request Request
 
-            SendResponse(w, "on")
-        } else {
-            c.Standby(0)
+    decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&request)
+	if err != nil {
+		SendError(w, http.StatusInternalServerError, err.Error())
+	}
 
-            SendResponse(w, "off")
-        }
-    }
+	return request
 }
