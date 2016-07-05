@@ -17,12 +17,10 @@ func GetRouter() *mux.Router {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", indexHandler).Methods("GET")
-
-	s := r.PathPrefix("/device").Subrouter()
-	s.HandleFunc("/", deviceHandler).Methods("GET")
-	s.HandleFunc("/{port:[0-9]+}", deviceHandler).Methods("GET")
-	s.HandleFunc("/{port:[0-9]+}/power", powerHandler).Methods("GET", "POST")
-	s.HandleFunc("/{port:[0-9]+}/volume", volumeHandler).Methods("POST")
+	r.HandleFunc("/device", deviceHandler).Methods("GET")
+	r.HandleFunc("/device/{port:[0-9]+}", deviceHandler).Methods("GET")
+	r.HandleFunc("/device/{port:[0-9]+}/power", powerHandler).Methods("GET", "POST")
+	r.HandleFunc("/device/{port:[0-9]+}/volume", volumeHandler).Methods("POST")
 
 	return r
 }
@@ -55,19 +53,12 @@ func powerHandler(w http.ResponseWriter, r *http.Request) {
 
 		SendResponse(w, status)
 	case "POST":
-		err := hdmiControl.Power(getRequestBody(w, r).State)
-		if err != nil {
-			SendError(w, http.StatusInternalServerError, err.Error())
-		}
+		hdmiControl.Power(getRequestBody(w, r).State)
 	}
 }
 
 func volumeHandler(w http.ResponseWriter, r *http.Request) {
-	err := hdmiControl.SetVolume(getRequestBody(w, r).State)
-
-	if err != nil {
-		SendError(w, http.StatusInternalServerError, err.Error())
-	}
+	hdmiControl.SetVolume(getRequestBody(w, r).State)
 }
 
 func getRequestBody(w http.ResponseWriter, r *http.Request) Request {

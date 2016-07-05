@@ -1,10 +1,14 @@
-all: deps fix
+all: deps build
 
 deps:
-	go get github.com/chbmuc/cec
-	go get github.com/gorilla/mux
+	@echo "Installing go dependencies"
+	go get
 
+build:
+	@echo "Compiling"
+	go install
 
 fix:
+	@echo "Runnong go tools to clean up source code"
 	go fmt
 	go fix
