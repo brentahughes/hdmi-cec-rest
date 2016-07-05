@@ -1,16 +1,11 @@
 package hdmiControl
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/chbmuc/cec"
 )
-
-type DeviceInfo struct {
-	OsdName string `json:"osdName"`
-	PhysicalAddress string `json:"physicalAddress"`
-	VendorId uint64 `json:"vendorId"`
-}
 
 var hdmi *cec.Connection
 var hdmiPort = 0
@@ -28,6 +23,18 @@ func SetPort(port int) {
 	hdmiPort = port
 }
 
+func GetDeviceInfo(port int) cec.Device {
+	devices := GetActiveDeviceList()
+
+	for _, device := range devices {
+		if device.LogicalAddress == port {
+			return device
+		}
+	}
+
+	return cec.Device{}
+}
+
 func GetActiveDeviceList() map[string]cec.Device {
 	return hdmi.List()
 }
@@ -36,21 +43,26 @@ func GetPowerStatus() string {
 	return hdmi.GetDevicePowerStatus(hdmiPort)
 }
 
-func Power(state string) {
-	if state == "on" {
-		hdmi.PowerOn(hdmiPort)
-	} else {
-		hdmi.Standby(hdmiPort)
+func Power(state string) error {
+	switch state {
+	case "on":
+		return hdmi.PowerOn(hdmiPort)
+	case "off":
+		return hdmi.Standby(hdmiPort)
+	default:
+		return errors.New("Invalid power state given.")
 	}
 }
 
-func SetVolume(state string) {
+func SetVolume(state string) error {
 	switch state {
-		case "up":
-			hdmi.VolumeUp()
-		case "down":
-			hdmi.VolumeDown()
-		case "mute":
-			hdmi.Mute()
+	case "up":
+		return hdmi.VolumeUp()
+	case "down":
+		return hdmi.VolumeDown()
+	case "mute":
+		return hdmi.Mute()
+	default:
+		return errors.New("Invalid volume state given.")
 	}
 }

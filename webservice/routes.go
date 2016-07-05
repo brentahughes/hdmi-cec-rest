@@ -10,17 +10,21 @@ import (
 )
 
 type Request struct {
-    State string `json:"state"`
+	State string `json:"state"`
 }
 
 func GetRouter() *mux.Router {
-	router := mux.NewRouter()
-	router.HandleFunc("/", indexHandler).Methods("GET")
-	router.HandleFunc("/device", deviceHandler).Methods("GET")
-	router.HandleFunc("/device/{port}/power", powerHandler).Methods("GET", "POST")
-	router.HandleFunc("/device/{port}/volume", volumeHandler).Methods("POST")
+	r := mux.NewRouter()
 
-	return router
+	r.HandleFunc("/", indexHandler).Methods("GET")
+
+	s := r.PathPrefix("/device").Subrouter()
+	s.HandleFunc("/", deviceHandler).Methods("GET")
+	s.HandleFunc("/{port:[0-9]+}", deviceHandler).Methods("GET")
+	s.HandleFunc("/{port:[0-9]+}/power", powerHandler).Methods("GET", "POST")
+	s.HandleFunc("/{port:[0-9]+}/volume", volumeHandler).Methods("POST")
+
+	return r
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -29,36 +33,47 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func deviceHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-    port, _ := strconv.Atoi(vars["port"])
+	port := vars["port"]
 
-    hdmiControl.SetPort(port)
-    SendOjectResponse(w, hdmiControl.GetActiveDeviceList())
+	if port != "" {
+		port, _ := strconv.Atoi(port)
+		SendOjectResponse(w, hdmiControl.GetDeviceInfo(port))
+	} else {
+		SendOjectResponse(w, hdmiControl.GetActiveDeviceList())
+	}
 }
 
 func powerHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-    port, _ := strconv.Atoi(vars["port"])
+	port, _ := strconv.Atoi(vars["port"])
 
-    hdmiControl.SetPort(port)
+	hdmiControl.SetPort(port)
 
 	switch r.Method {
-		case "GET":
-			status := hdmiControl.GetPowerStatus()
+	case "GET":
+		status := hdmiControl.GetPowerStatus()
 
-			SendResponse(w, status)
-		case "POST":
-			hdmiControl.Power(getRequestBody(w, r).State)
+		SendResponse(w, status)
+	case "POST":
+		err := hdmiControl.Power(getRequestBody(w, r).State)
+		if err != nil {
+			SendError(w, http.StatusInternalServerError, err.Error())
+		}
 	}
 }
 
 func volumeHandler(w http.ResponseWriter, r *http.Request) {
-	hdmiControl.SetVolume(getRequestBody(w, r).State)
+	err := hdmiControl.SetVolume(getRequestBody(w, r).State)
+
+	if err != nil {
+		SendError(w, http.StatusInternalServerError, err.Error())
+	}
 }
 
 func getRequestBody(w http.ResponseWriter, r *http.Request) Request {
 	var request Request
 
-    decoder := json.NewDecoder(r.Body)
+	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&request)
 	if err != nil {
 		SendError(w, http.StatusInternalServerError, err.Error())
