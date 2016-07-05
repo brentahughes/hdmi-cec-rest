@@ -48,7 +48,7 @@ curl http://localhost:5000/device
 
 
 
-### /device/[physical_address]
+### /device/[logical_address]
 Get details for single device by its physical address
 
 #### GET
@@ -70,7 +70,7 @@ curl http://localhost:5000/device/0
 ```
 
 
-### /device/[physical_address]/power
+### /device/[logical_address]/power
 Get or set the power status for a device
 
 #### GET
@@ -96,7 +96,7 @@ curl -X POST -d '{"state": "on"}' http://localhost:5000/device/0/power
 
 
 
-### /device/[physical_address]/volume
+### /device/[logical_address]/volume
 Set the volume for a amplifier device
 
 This will only work if the device is type Amplifier
