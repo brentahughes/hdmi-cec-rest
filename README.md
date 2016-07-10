@@ -121,13 +121,12 @@ apt-get install libcec-dev cec-utils make
 ```
 
 
-* Compile Binary
+* Get Go Dependencies
 ```bash
-make
+go get
 ```
 
-
-* Install Service
+* Compile Binary
 ```bash
-make install
+go build
 ```
