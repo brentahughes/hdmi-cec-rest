@@ -11,6 +11,40 @@ type httpResponse struct {
 	Message string `json:"message"`
 }
 
+type requestEndpoint struct {
+	Endpoint      string   `json:"endpoint"`
+	Methods       []string `json:"methods"`
+	Documentation string   `json:"documentation"`
+}
+
+func SendRootResponse(w http.ResponseWriter) {
+	response := []requestEndpoint{
+		requestEndpoint{
+			Endpoint:      "/device",
+			Methods:       []string{"GET"},
+			Documentation: "Get list of connected device and their details.",
+		},
+		requestEndpoint{
+			Endpoint:      "/device/[LogicalAddress]",
+			Methods:       []string{"GET"},
+			Documentation: "Get details for single device by its LogicalAddress",
+		},
+		requestEndpoint{
+			Endpoint: "/device/[LogicalAddress]/power",
+			Methods:  []string{"GET", "POST"},
+			Documentation: `GET: Get power status of device.
+				POST: Set power state on or off by sending post data '{\"state\": \"on\"}'`,
+		},
+		requestEndpoint{
+			Endpoint:      "/device/[LogicalAddress]/volume",
+			Methods:       []string{"POST"},
+			Documentation: "Set volume level up, down, or mute by sending post data '{\"state\": \"up\"}'",
+		},
+	}
+
+	SendOjectResponse(w, response)
+}
+
 func SendResponse(w http.ResponseWriter, message string) {
 	w.WriteHeader(http.StatusOK)
 

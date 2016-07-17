@@ -26,7 +26,7 @@ func GetRouter() *mux.Router {
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	SendResponse(w, "Hello")
+	SendRootResponse(w)
 }
 
 func deviceHandler(w http.ResponseWriter, r *http.Request) {
