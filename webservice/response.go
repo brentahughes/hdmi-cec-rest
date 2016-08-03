@@ -7,8 +7,7 @@ import (
 )
 
 type httpResponse struct {
-	Status  string `json:"status"`
-	Message string `json:"message"`
+	State string `json:"state"`
 }
 
 type requestEndpoint struct {
@@ -49,8 +48,7 @@ func SendResponse(w http.ResponseWriter, message string) {
 	w.WriteHeader(http.StatusOK)
 
 	response := httpResponse{
-		Status:  "success",
-		Message: message,
+		State:  message,
 	}
 
 	outputResponse(w, response)
@@ -60,8 +58,7 @@ func SendError(w http.ResponseWriter, statusCode int, message string) {
 	w.WriteHeader(statusCode)
 
 	response := httpResponse{
-		Status:  "error",
-		Message: message,
+		State:  fmt.Sprintf("Error: %s", message),
 	}
 
 	outputResponse(w, response)
